@@ -38,7 +38,22 @@ class IPv4:
     dst: str
 
     def __init__(self, buffer: bytes):
-        pass  # TODO
+        b = ''.join(format(byte, '08b') for byte in [*buffer])
+        # print(b)
+        self.version=int(b[0:4],2)
+        self.header_len=int(b[4:8],2)
+        self.tos=int(b[8:16],2)
+        self.length=int(b[16:32],2)
+        self.id=int(b[32:48],2)
+        self.flags=int(b[48:51],2)
+        self.frag_offset=int(b[51:64],2)
+        self.ttl=int(b[64:72],2)
+        self.proto=int(b[72:80],2)
+        self.cksum=int(b[80:96],2)
+        self.src=f"{int(b[96:104],2)}.{int(b[104:112],2)}.{int(b[112:120],2)}.{int(b[120:128],2)}"
+        self.dst=f"{int(b[128:136],2)}.{int(b[136:144],2)}.{int(b[144:152],2)}.{int(b[152:160],2)}"
+        print(self)
+
 
     def __str__(self) -> str:
         return f"IPv{self.version} (tos 0x{self.tos:x}, ttl {self.ttl}, " + \
@@ -60,7 +75,11 @@ class ICMP:
     cksum: int
 
     def __init__(self, buffer: bytes):
-        pass  # TODO
+        b = ''.join(format(byte, '08b') for byte in [*buffer])
+        self.type=int(b[0:8],2)
+        self.code=int(b[8:16],2)
+        self.cksum=int(b[16:32],2)
+
 
     def __str__(self) -> str:
         return f"ICMP (type {self.type}, code {self.code}, " + \
@@ -79,7 +98,12 @@ class UDP:
     cksum: int
 
     def __init__(self, buffer: bytes):
-        pass  # TODO
+        b = ''.join(format(byte, '08b') for byte in [*buffer])
+        self.src_port=int(b[0:16],2)
+        self.dst_port=int(b[16:32],2)
+        self.len=int(b[32:48],2)
+        self.cksum=int(b[48:64],2)
+
 
     def __str__(self) -> str:
         return f"UDP (src_port {self.src_port}, dst_port {self.dst_port}, " + \
@@ -107,9 +131,26 @@ def traceroute(sendsock: util.Socket, recvsock: util.Socket, ip: str) \
     should be included as the final element in the list.
     """
 
+
+
+
     # TODO Add your implementation
     for ttl in range(1, TRACEROUTE_MAX_TTL+1):
-        util.print_result([], ttl)
+        addrs=[]
+        for _ in range(5):
+            
+            sendsock.set_ttl(ttl)
+            sendsock.sendto(b"Potato", (ip, 33464))
+
+            if recvsock.recv_select():
+                buf, addr = recvsock.recvfrom()
+                addrs.append(addr[0])
+                # i=IPv4(buf)
+            addrs=list(set(addrs))
+        if(ip in addrs):
+            util.print_result(addrs, ttl)
+            break
+        util.print_result(addrs, ttl)
     return []
 
 
